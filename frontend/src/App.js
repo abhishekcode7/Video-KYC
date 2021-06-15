@@ -58,8 +58,20 @@ function App() {
     setSnap(window.URL.createObjectURL(new window.Blob([frame.image])));
   };
   const sendText = (id) => {
-    let txt = "";
-    if (id === 1) txt = "Read Out the code on screen";
+    var txt = "";
+
+    if (id === 1) txt = "Read Out the code on screen --> ";
+    if (id === 1) {
+      let k = 4;
+      var rString =
+        "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
+      while (k !== 0) {
+        let v = (Math.random() * 1000) % 62;
+        txt += rString.charAt(v);
+        k--;
+      }
+      console.log(txt);
+    }
     if (id === 2) txt = "Show your pan Card";
     if (id === 3) txt = "";
     setOtext(txt);
@@ -182,17 +194,17 @@ function App() {
           </div>
         </div>
       </div>
+      <div>
+        {receivingCall && !callAccepted ? (
+          <div className="caller">
+            <h1>{name} is calling...</h1>
+            <Button variant="contained" color="primary" onClick={answerCall}>
+              Answer
+            </Button>
+          </div>
+        ) : null}
+      </div>
       <div className="container">
-        <div>
-          {receivingCall && !callAccepted ? (
-            <div className="caller">
-              <h1>{name} is calling...</h1>
-              <Button variant="contained" color="primary" onClick={answerCall}>
-                Answer
-              </Button>
-            </div>
-          ) : null}
-        </div>
         <div className="video-container">
           {stream && (
             <video
@@ -212,40 +224,28 @@ function App() {
               playsInline
               ref={userVideo}
               autoPlay
-              style={{ width: "300px" }}
+              // style={{ width: "300px" }}
             />
           ) : null}
           <div className="overlay-text">{otext}</div>
         </div>
-        <div>
-          <Button
-            variant="outlined"
-            color="primary"
-            onClick={() => sendText(1)}
-          >
-            Read Code
-          </Button>
-          <Button
-            variant="outlined"
-            color="primary"
-            onClick={() => sendText(2)}
-          >
-            Pan Card
-          </Button>
-          <Button
-            variant="outlined"
-            color="primary"
-            onClick={() => sendText(3)}
-          >
-            Clear
-          </Button>
-          <Button variant="outlined" color="primary" onClick={takeSnap}>
-            Take screenshot
-          </Button>
-        </div>
-        <div>
-          <img src={snap} />
-        </div>
+      </div>
+      <div className="options">
+        <Button variant="outlined" color="primary" onClick={() => sendText(1)}>
+          Read Code
+        </Button>
+        <Button variant="outlined" color="primary" onClick={() => sendText(2)}>
+          Pan Card
+        </Button>
+        <Button variant="outlined" color="primary" onClick={() => sendText(3)}>
+          Clear
+        </Button>
+        <Button variant="outlined" color="primary" onClick={takeSnap}>
+          Take screenshot
+        </Button>
+      </div>
+      <div>
+        <img src={snap} />
       </div>
     </>
   );
