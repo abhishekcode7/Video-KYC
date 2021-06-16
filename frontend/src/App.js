@@ -12,7 +12,7 @@ import "./App.css";
 import captureVideoFrame from "capture-video-frame";
 import captureFrame from "capture-frame";
 const socket = io.connect("http://localhost:5000");
-function App() {
+function App(props) {
   const [me, setMe] = useState("");
   const [stream, setStream] = useState();
   const [receivingCall, setReceivingCall] = useState(false);
@@ -29,7 +29,6 @@ function App() {
   const myVideo = useRef();
   const userVideo = useRef();
   const connectionRef = useRef();
-
   useEffect(() => {
     navigator.mediaDevices
       .getUserMedia({ video: true, audio: true })
@@ -125,12 +124,19 @@ function App() {
     connectionRef.current.destroy();
     setIdToCall("");
   };
-
+  const [data, setData] = useState([]);
+  const getUsers = () => {
+    fetch("https://jsonplaceholder.typicode.com/posts")
+      .then((response) => response.json())
+      .then((json) => {
+        setData(json);
+      });
+  };
   return (
     <>
-      <h1 style={{ textAlign: "center", color: "#000" }}>Video KYC</h1>
+      {/* <h1 style={{ textAlign: "center", color: "#000" }}>Video KYC</h1> */}
       <div className="call-center">
-        <div className="myId">
+        {/* <div className="myId">
           <TextField
             id="filled-basic"
             type="password"
@@ -138,18 +144,18 @@ function App() {
             variant="filled"
             onChange={(e) => setAdmin(e.target.value)}
           />
-          {/* <Button
+          <Button
             variant="contained"
             color="primary"
             startIcon={<AssignmentIcon fontSize="large" />}
           >
             Submit
-          </Button> */}
+          </Button>
           {admin === "Pass" && <div>Verified</div>}
           <Typography variant="h6" gutterBottom>
             Your ID : {me}
           </Typography>
-        </div>
+        </div> */}
         <div className="myId">
           <TextField
             id="filled-basic"
@@ -230,23 +236,53 @@ function App() {
           <div className="overlay-text">{otext}</div>
         </div>
       </div>
-      <div className="options">
-        <Button variant="outlined" color="primary" onClick={() => sendText(1)}>
-          Read Code
-        </Button>
-        <Button variant="outlined" color="primary" onClick={() => sendText(2)}>
-          Pan Card
-        </Button>
-        <Button variant="outlined" color="primary" onClick={() => sendText(3)}>
-          Clear
-        </Button>
-        <Button variant="outlined" color="primary" onClick={takeSnap}>
-          Take screenshot
-        </Button>
-      </div>
-      <div>
-        <img src={snap} />
-      </div>
+      {props.show === 1 && (
+        <>
+          <div className="options">
+            <Button
+              variant="outlined"
+              color="primary"
+              onClick={() => sendText(1)}
+            >
+              Read Code
+            </Button>
+            <Button
+              variant="outlined"
+              color="primary"
+              onClick={() => sendText(2)}
+            >
+              Pan Card
+            </Button>
+            <Button
+              variant="outlined"
+              color="primary"
+              onClick={() => sendText(3)}
+            >
+              Clear
+            </Button>
+            <Button variant="outlined" color="primary" onClick={takeSnap}>
+              Take screenshot
+            </Button>
+          </div>
+          <div>
+            <img src={snap} />
+          </div>
+          <div></div>
+          <div className="user">
+            <Button
+              variant="contained"
+              color="primary"
+              href="#contained-buttons"
+              onClick={getUsers}
+            >
+              Get List
+            </Button>
+            {data.map((obj) => {
+              return <div>{obj.title}</div>;
+            })}
+          </div>
+        </>
+      )}
     </>
   );
 }
