@@ -20,6 +20,7 @@ const Main = () => {
         <div className="options-container">
           <div className="admin">
             <TextField
+              type="password"
               id="standard-basic"
               label="Enter Password (admin)"
               onChange={(e) => setPass(e.target.value)}

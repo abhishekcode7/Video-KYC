@@ -11,9 +11,10 @@ import io from "socket.io-client";
 import "./App.css";
 import captureVideoFrame from "capture-video-frame";
 import captureFrame from "capture-frame";
+import Screenshot from "./components/Screenshot"
 const socket = io.connect("http://localhost:5000");
-function App(props) {
-  const [me, setMe] = useState("");
+function App({ show }) {
+  const [me, setMe] = useState("1");
   const [stream, setStream] = useState();
   const [receivingCall, setReceivingCall] = useState(false);
   const [caller, setCaller] = useState("");
@@ -25,13 +26,14 @@ function App(props) {
   const [ver, setVer] = useState(0);
   const [admin, setAdmin] = useState("");
   const [otext, setOtext] = useState("");
-  const [snap, setSnap] = useState("");
+  const [snap, setSnap] = useState(null);
+  const [callCount, setCallCount] = useState(0);
   const myVideo = useRef();
   const userVideo = useRef();
   const connectionRef = useRef();
   useEffect(() => {
     navigator.mediaDevices
-      .getUserMedia({ video: true, audio: true })
+      .getUserMedia({ video: true, audio: false })
       .then((stream) => {
         setStream(stream);
         myVideo.current.srcObject = stream;
@@ -41,21 +43,28 @@ function App(props) {
       setMe(id);
     });
 
-    socket.on("callUser", (data) => {
-      setReceivingCall(true);
-      setCaller(data.from);
-      setName(data.name);
-      setCallerSignal(data.signal);
+    socket.emit("getId", (id) => {
+      setMe(id);
     });
   }, []);
+  socket.on("callUser", (data) => {
+    setReceivingCall(true);
+    setCaller(data.from);
+    setName(data.name);
+    setCallerSignal(data.signal);
+  });
   socket.on("display", (data) => {
     setOtext(data);
   });
+
   const takeSnap = () => {
     // const frame = captureVideoFrame("video-other-1-id", "png");
     const frame = captureFrame(".video-other", "jpeg");
     setSnap(window.URL.createObjectURL(new window.Blob([frame.image])));
   };
+  const setImage = (data)=>{
+    setSnap(data);
+  }
   const sendText = (id) => {
     var txt = "";
 
@@ -120,10 +129,19 @@ function App(props) {
   };
 
   const leaveCall = () => {
-    setCallEnded(true);
     connectionRef.current.destroy();
+    socket.emit("ended", caller);
+    setCallEnded(true);
+    setReceivingCall(false);
+    setCallAccepted(false);
     setIdToCall("");
   };
+  socket.on("end", () => {
+    setCallEnded(true);
+    setReceivingCall(false);
+    setCallAccepted(false);
+    setIdToCall("");
+  });
   const [data, setData] = useState([]);
   const getUsers = () => {
     fetch("https://jsonplaceholder.typicode.com/posts")
@@ -161,11 +179,15 @@ function App(props) {
             id="filled-basic"
             label="Name"
             variant="filled"
-            value={name}
             onChange={(e) => setName(e.target.value)}
             style={{ marginBottom: "10px" }}
           />
-          <CopyToClipboard text={me} style={{ marginBottom: "10px" }}>
+          {show === 1 && (
+            <Typography variant="h6" gutterBottom style={{ color: "black" }}>
+              Your ID : {me}
+            </Typography>
+          )}
+          {/* <CopyToClipboard text={me} style={{ marginBottom: "10px" }}>
             <Button
               variant="contained"
               color="primary"
@@ -173,7 +195,7 @@ function App(props) {
             >
               Copy ID
             </Button>
-          </CopyToClipboard>
+          </CopyToClipboard> */}
 
           <TextField
             id="filled-basic"
@@ -183,7 +205,7 @@ function App(props) {
             onChange={(e) => setIdToCall(e.target.value)}
           />
           <div className="call-button">
-            {callAccepted && !callEnded ? (
+            {callAccepted && !callEnded && show == 1 ? (
               <Button variant="contained" color="secondary" onClick={leaveCall}>
                 End Call
               </Button>
@@ -191,7 +213,14 @@ function App(props) {
               <IconButton
                 color="primary"
                 aria-label="call"
-                onClick={() => callUser(idToCall)}
+                onClick={() => {
+                  if (callCount === 1) {
+                    window.location.reload();
+                  } else {
+                    callUser(idToCall);
+                    setCallCount(1);
+                  }
+                }}
               >
                 <PhoneIcon fontSize="medium" />
               </IconButton>
@@ -203,7 +232,7 @@ function App(props) {
       <div>
         {receivingCall && !callAccepted ? (
           <div className="caller">
-            <h1>{name} is calling...</h1>
+            <h1 style={{ color: "black" }}>{name} is calling...</h1>
             <Button variant="contained" color="primary" onClick={answerCall}>
               Answer
             </Button>
@@ -236,7 +265,7 @@ function App(props) {
           <div className="overlay-text">{otext}</div>
         </div>
       </div>
-      {props.show === 1 && (
+      {show === 1 && (
         <>
           <div className="options">
             <Button
@@ -264,8 +293,8 @@ function App(props) {
               Take screenshot
             </Button>
           </div>
-          <div>
-            <img src={snap} />
+          <div className="screenshot">
+            <Screenshot snap={snap} func={setImage}/>
           </div>
           <div></div>
           <div className="user">
@@ -275,7 +304,7 @@ function App(props) {
               href="#contained-buttons"
               onClick={getUsers}
             >
-              Get List
+              Get List of people yet to be verified
             </Button>
             {data.map((obj) => {
               return <div>{obj.title}</div>;
