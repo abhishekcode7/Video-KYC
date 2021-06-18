@@ -11,7 +11,7 @@ import io from "socket.io-client";
 import "./App.css";
 import captureVideoFrame from "capture-video-frame";
 import captureFrame from "capture-frame";
-import Screenshot from "./components/Screenshot"
+import Screenshot from "./components/Screenshot";
 const socket = io.connect("http://localhost:5000");
 function App({ show }) {
   const [me, setMe] = useState("1");
@@ -26,7 +26,7 @@ function App({ show }) {
   const [ver, setVer] = useState(0);
   const [admin, setAdmin] = useState("");
   const [otext, setOtext] = useState("");
-  const [snap, setSnap] = useState(null);
+  const [snap, setSnap] = useState([]);
   const [callCount, setCallCount] = useState(0);
   const myVideo = useRef();
   const userVideo = useRef();
@@ -58,13 +58,23 @@ function App({ show }) {
   });
 
   const takeSnap = () => {
-    // const frame = captureVideoFrame("video-other-1-id", "png");
     const frame = captureFrame(".video-other", "jpeg");
-    setSnap(window.URL.createObjectURL(new window.Blob([frame.image])));
+    let temp = snap.slice();
+    temp.push(window.URL.createObjectURL(new window.Blob([frame.image])));
+    setSnap(temp);
   };
-  const setImage = (data)=>{
-    setSnap(data);
-  }
+
+  const deleteSnap = (index) => {
+    console.log(index)
+    let temp = snap.slice();
+    temp.splice(index, 1);
+    setSnap(temp);
+  };
+  const setImage = (data,index) => {
+    let temp = snap.slice();
+    temp[index]=data;
+    setSnap(temp);
+  };
   const sendText = (id) => {
     var txt = "";
 
@@ -205,7 +215,7 @@ function App({ show }) {
             onChange={(e) => setIdToCall(e.target.value)}
           />
           <div className="call-button">
-            {callAccepted && !callEnded && show == 1 ? (
+            {callAccepted && !callEnded && show === 1 ? (
               <Button variant="contained" color="secondary" onClick={leaveCall}>
                 End Call
               </Button>
@@ -294,7 +304,18 @@ function App({ show }) {
             </Button>
           </div>
           <div className="screenshot">
-            <Screenshot snap={snap} func={setImage}/>
+            {/* <Screenshot snap={snap} func={setImage} /> */}
+            {snap.map((pic, index) => {
+              return (
+                <Screenshot
+                  snap={pic}
+                  func={setImage}
+                  index={index}
+                  key={index}
+                  deleteSnap={deleteSnap}
+                />
+              );
+            })}
           </div>
           <div></div>
           <div className="user">

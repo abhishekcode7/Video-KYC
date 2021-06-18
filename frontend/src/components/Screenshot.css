@@ -1,6 +1,6 @@
 .img-display{
-    width: 300px;
-    height: 200px;
+    width: 500px;
+    height: 400px;
     display: flex;
     align-items: center;
     justify-content: space-around;
@@ -11,4 +11,7 @@
     display: flex;
     flex-direction: column;
     justify-content: space-around;
+}
+.hover-item{
+    cursor: pointer;
 }

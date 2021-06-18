@@ -3,7 +3,9 @@ import ReactCrop from "react-image-crop";
 import "react-image-crop/dist/ReactCrop.css";
 import { Button } from "@material-ui/core";
 import "./Screenshot.css";
-const Screenshot = ({ snap, func }) => {
+import CropIcon from "@material-ui/icons/Crop";
+import DeleteIcon from "@material-ui/icons/Delete";
+const Screenshot = ({ snap, func, index, deleteSnap }) => {
   const [crop, setCrop] = useState({ aspect: 16 / 9 });
   const [image, setImage] = useState(null);
   function getCroppedImg() {
@@ -28,30 +30,30 @@ const Screenshot = ({ snap, func }) => {
 
     // As Base64 string
     const base64Image = canvas.toDataURL("image/jpeg");
-    func(base64Image);
+    func(base64Image, index);
   }
   return (
     <>
-      {snap !== null && (
+      {snap !== [] && (
         <div>
-          <div className="img-display">
+          <div className="img-display" key={index}>
             <ReactCrop
               src={snap}
               crop={crop}
               onChange={(newCrop) => setCrop(newCrop)}
               onImageLoaded={setImage}
             />
-            <div className="options-2">
-              <Button
-                variant="outlined"
-                color="primary"
+            <div className="options-2" style={{ marginLeft: "10px" }}>
+              <CropIcon
+                className="hover-item"
+                title="Crop image"
                 onClick={getCroppedImg}
-              >
-                Crop
-              </Button>
-              <Button variant="outlined" color="secondary" size="small" onClick={()=>func(null)}>
-                Delete
-              </Button>
+              />
+              <DeleteIcon
+                onClick={() => deleteSnap(index)}
+                title="Delete image"
+                className="hover-item"
+              />
             </div>
           </div>
         </div>
