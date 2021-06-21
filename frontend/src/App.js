@@ -12,6 +12,7 @@ import "./App.css";
 import captureVideoFrame from "capture-video-frame";
 import captureFrame from "capture-frame";
 import Screenshot from "./components/Screenshot";
+import axios from "axios";
 const socket = io.connect("http://localhost:5000");
 function App({ show }) {
   const [me, setMe] = useState("1");
@@ -32,6 +33,7 @@ function App({ show }) {
   const [loop, setLoop] = useState(1);
   const [adminStatus, setAdminStatus] = useState(0);
   const [values, setValues] = useState([]);
+  const [aadhaar, setAadhar] = useState("");
   const myVideo = useRef();
   const userVideo = useRef();
   const connectionRef = useRef();
@@ -87,11 +89,13 @@ function App({ show }) {
 
   const takeSnap = () => {
     const frame = captureFrame(".video-other", "jpeg");
+    let b64encoded = Buffer.from(frame.image).toString("base64");
     let temp = snap.slice();
     temp.push({
-      src: window.URL.createObjectURL(new window.Blob([frame.image])),
+      src: `data:image/jpeg;base64,${b64encoded}`,
       name: "",
     });
+    // window.URL.createObjectURL(new window.Blob([frame.image]))
     setSnap(temp);
   };
   const setNameImg = (index, title) => {
@@ -111,6 +115,18 @@ function App({ show }) {
     let temp = snap.slice();
     temp[index] = { src: data, name: "" };
     setSnap(temp);
+  };
+  const submitPhotos = () => {
+    if (values.length !== 4) {
+      alert("Need exactly 4 images before submitting .");
+    } else if (aadhaar.length !== 1) {
+      alert("Invalid Aadhar id");
+    } else {
+      // console.log(snap);
+      axios.post("/saveData", {snap:snap,id:aadhaar}).then((res) => {
+        alert(res.data.message);
+      });
+    }
   };
   const sendText = (id) => {
     var txt = "";
@@ -197,11 +213,12 @@ function App({ show }) {
     setCallAccepted(false);
     setCaller("");
     setIdToCall("");
-    if (show == 1) alert("User Disconnected , please join again");
-    else alert("Admin Disconnect , please join again");
-    setTimeout(() => {
-      window.location.reload();
-    }, 2000);
+    // if (show == 1) alert("User Disconnected , please join again");
+    // else alert("Admin Disconnect , please join again");
+    // setTimeout(() => {
+    //   window.location.reload();
+    // }, 2000);
+    window.location.reload();
   });
   const [data, setData] = useState([]);
   const getUsers = () => {
@@ -379,8 +396,22 @@ function App({ show }) {
               );
             })}
           </div>
-          <div></div>
+          <div>
+            {/* <Button variant="outlined" color="primary" onClick={submitPhotos}>
+              Submit Photos
+            </Button> */}
+          </div>
           <div className="user">
+            <TextField
+              id="filled-basic"
+              label="Enter Aadhaar number "
+              variant="filled"
+              onChange={(e) => setAadhar(e.target.value)}
+              style={{ marginBottom: "10px" }}
+            />
+            <Button variant="outlined" color="primary" onClick={submitPhotos}>
+              Submit Photos
+            </Button>
             <Button
               variant="contained"
               color="primary"

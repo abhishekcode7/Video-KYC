@@ -63,10 +63,10 @@ const Screenshot = ({ snap, func, index, deleteSnap, setName }) => {
               onChange={(e) => setName(index, e.target.value)}
             >
               <option selected>Select image type</option>
-              <option value="1">User Photo</option>
-              <option value="2">Aadhaar Card Front</option>
-              <option value="3">Aadhaar Card Back</option>
-              <option value="4">Pan Card</option>
+              <option value="User_Photo">User Photo</option>
+              <option value="Aadhaar_Card_Front">Aadhaar Card Front</option>
+              <option value="Aadhaar_Card_Back">Aadhaar Card Back</option>
+              <option value="Pan_Card">Pan Card</option>
             </select>
           </div>
         </div>
