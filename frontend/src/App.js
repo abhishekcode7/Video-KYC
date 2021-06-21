@@ -23,14 +23,36 @@ function App({ show }) {
   const [idToCall, setIdToCall] = useState("");
   const [callEnded, setCallEnded] = useState(false);
   const [name, setName] = useState("");
-  const [ver, setVer] = useState(0);
-  const [admin, setAdmin] = useState("");
   const [otext, setOtext] = useState("");
   const [snap, setSnap] = useState([]);
   const [callCount, setCallCount] = useState(0);
+  const [otp, setOtp] = useState("");
+  const [curotp, setCurotp] = useState("");
+  const [opp, setOpp] = useState("null");
+  const [loop, setLoop] = useState(1);
+  const [adminStatus, setAdminStatus] = useState(0);
+  const [values, setValues] = useState([]);
   const myVideo = useRef();
   const userVideo = useRef();
   const connectionRef = useRef();
+
+  useEffect(() => {
+    setTimeout(() => {
+      fetch("/adminList")
+        .then((res) => res.json())
+        .then((data) => {
+          if (data.id !== "null") setAdminStatus(1);
+          else setAdminStatus(0);
+        });
+      fetch("/userList")
+        .then((res) => res.json())
+        .then((data) => {
+          setOpp(data.id);
+          setIdToCall(data.id);
+        });
+      setLoop((loop + 1) % 10);
+    }, 2000);
+  }, [loop]);
   useEffect(() => {
     navigator.mediaDevices
       .getUserMedia({ video: true, audio: false })
@@ -38,7 +60,11 @@ function App({ show }) {
         setStream(stream);
         myVideo.current.srcObject = stream;
       });
-
+    fetch("/otp")
+      .then((res) => res.json())
+      .then((data) => {
+        setCurotp(data.otp);
+      });
     socket.on("me", (id) => {
       setMe(id);
     });
@@ -46,6 +72,8 @@ function App({ show }) {
     socket.emit("getId", (id) => {
       setMe(id);
     });
+    if (show === 1) socket.emit("admin");
+    else socket.emit("user");
   }, []);
   socket.on("callUser", (data) => {
     setReceivingCall(true);
@@ -60,19 +88,28 @@ function App({ show }) {
   const takeSnap = () => {
     const frame = captureFrame(".video-other", "jpeg");
     let temp = snap.slice();
-    temp.push(window.URL.createObjectURL(new window.Blob([frame.image])));
+    temp.push({
+      src: window.URL.createObjectURL(new window.Blob([frame.image])),
+      name: "",
+    });
     setSnap(temp);
   };
-
+  const setNameImg = (index, title) => {
+    if (values.indexOf(title) !== -1) {
+      alert("This name is already assigned to an image .");
+    } else {
+      snap[index] = { src: snap[index].src, name: title };
+      setValues((values) => [...values, title]);
+    }
+  };
   const deleteSnap = (index) => {
-    console.log(index)
     let temp = snap.slice();
     temp.splice(index, 1);
     setSnap(temp);
   };
-  const setImage = (data,index) => {
+  const setImage = (data, index) => {
     let temp = snap.slice();
-    temp[index]=data;
+    temp[index] = { src: data, name: "" };
     setSnap(temp);
   };
   const sendText = (id) => {
@@ -88,12 +125,11 @@ function App({ show }) {
         txt += rString.charAt(v);
         k--;
       }
-      console.log(txt);
     }
     if (id === 2) txt = "Show your pan Card";
     if (id === 3) txt = "";
     setOtext(txt);
-    socket.emit("sendText", { to: caller, text: txt });
+    socket.emit("sendText", { to: idToCall, text: txt });
   };
   const callUser = (id) => {
     const peer = new Peer({
@@ -112,9 +148,9 @@ function App({ show }) {
     peer.on("stream", (stream) => {
       userVideo.current.srcObject = stream;
     });
-    socket.on("callAccepted", (signal) => {
+    socket.on("callAccepted", (data) => {
       setCallAccepted(true);
-      peer.signal(signal);
+      peer.signal(data);
     });
 
     connectionRef.current = peer;
@@ -122,6 +158,7 @@ function App({ show }) {
 
   const answerCall = () => {
     setCallAccepted(true);
+    setCallEnded(false);
     const peer = new Peer({
       initiator: false,
       trickle: false,
@@ -139,18 +176,32 @@ function App({ show }) {
   };
 
   const leaveCall = () => {
+    socket.emit("ended", idToCall);
     connectionRef.current.destroy();
-    socket.emit("ended", caller);
     setCallEnded(true);
     setReceivingCall(false);
     setCallAccepted(false);
+    setCaller("");
     setIdToCall("");
+    window.location.reload();
   };
   socket.on("end", () => {
     setCallEnded(true);
     setReceivingCall(false);
     setCallAccepted(false);
+    window.location.reload();
+  });
+  socket.on("callEnded", () => {
+    setCallEnded(true);
+    setReceivingCall(false);
+    setCallAccepted(false);
+    setCaller("");
     setIdToCall("");
+    if (show == 1) alert("User Disconnected , please join again");
+    else alert("Admin Disconnect , please join again");
+    setTimeout(() => {
+      window.location.reload();
+    }, 2000);
   });
   const [data, setData] = useState([]);
   const getUsers = () => {
@@ -160,91 +211,102 @@ function App({ show }) {
         setData(json);
       });
   };
+  const sendOTP = () => {
+    socket.emit("set", otp);
+    fetch("/otp")
+      .then((res) => res.json())
+      .then((data) => {
+        setCurotp(data.otp);
+      });
+  };
+  const showData = () => {
+    socket.emit("show");
+  };
+
+  // const showUsers = () => {
+  //   fetch("/userList")
+  //     .then((res) => res.json())
+  //     .then((data) => {
+  //       setOpp(data.id);
+  //       setIdToCall(data.id);
+  //     });
+  // };
   return (
     <>
-      {/* <h1 style={{ textAlign: "center", color: "#000" }}>Video KYC</h1> */}
       <div className="call-center">
-        {/* <div className="myId">
-          <TextField
-            id="filled-basic"
-            type="password"
-            label="Get Admin Role"
-            variant="filled"
-            onChange={(e) => setAdmin(e.target.value)}
-          />
-          <Button
-            variant="contained"
-            color="primary"
-            startIcon={<AssignmentIcon fontSize="large" />}
-          >
-            Submit
-          </Button>
-          {admin === "Pass" && <div>Verified</div>}
-          <Typography variant="h6" gutterBottom>
-            Your ID : {me}
-          </Typography>
-        </div> */}
         <div className="myId">
-          <TextField
-            id="filled-basic"
-            label="Name"
-            variant="filled"
-            onChange={(e) => setName(e.target.value)}
-            style={{ marginBottom: "10px" }}
-          />
           {show === 1 && (
-            <Typography variant="h6" gutterBottom style={{ color: "black" }}>
-              Your ID : {me}
-            </Typography>
-          )}
-          {/* <CopyToClipboard text={me} style={{ marginBottom: "10px" }}>
-            <Button
-              variant="contained"
-              color="primary"
-              startIcon={<AssignmentIcon fontSize="large" />}
-            >
-              Copy ID
-            </Button>
-          </CopyToClipboard> */}
-
-          <TextField
-            id="filled-basic"
-            label="ID to call"
-            variant="filled"
-            value={idToCall}
-            onChange={(e) => setIdToCall(e.target.value)}
-          />
-          <div className="call-button">
-            {callAccepted && !callEnded && show === 1 ? (
-              <Button variant="contained" color="secondary" onClick={leaveCall}>
-                End Call
+            <>
+              <TextField
+                id="filled-basic"
+                label="Enter custom OTP"
+                variant="filled"
+                onChange={(e) => setOtp(e.target.value)}
+                style={{ marginBottom: "10px" }}
+              />
+              {/* <Typography variant="h6" gutterBottom style={{ color: "black" }}>
+                Your ID : {me}
+              </Typography> */}
+              <Typography variant="h6" gutterBottom style={{ color: "black" }}>
+                Current OTP : {curotp}
+              </Typography>
+              <Button variant="outlined" color="primary" onClick={sendOTP}>
+                Set OTP
               </Button>
-            ) : (
-              <IconButton
-                color="primary"
-                aria-label="call"
-                onClick={() => {
-                  if (callCount === 1) {
-                    window.location.reload();
-                  } else {
-                    callUser(idToCall);
-                    setCallCount(1);
-                  }
-                }}
-              >
-                <PhoneIcon fontSize="medium" />
-              </IconButton>
-            )}
-            {idToCall}
+              {/* <Button variant="outlined" color="primary" onClick={showData}>
+                Show data
+              </Button> */}
+              {/* <Button variant="outlined" color="primary" onClick={showUsers}>
+                Show joined users
+              </Button> */}
+              <div className="call-button">
+                {callAccepted && !callEnded && show === 1 ? (
+                  <Button
+                    variant="contained"
+                    color="secondary"
+                    onClick={leaveCall}
+                    style={{ marginRight: "10px" }}
+                  >
+                    End Call
+                  </Button>
+                ) : (
+                  <IconButton
+                    color="primary"
+                    aria-label="call"
+                    onClick={() => {
+                      if (callCount === 1 && show !== 1) {
+                        window.location.reload();
+                      } else {
+                        callUser(idToCall);
+                        setCallCount(1);
+                      }
+                    }}
+                  >
+                    <PhoneIcon size="medium" />
+                  </IconButton>
+                )}
+                {opp === "null" ? "NO user connected" : "User Connected"}
+              </div>
+            </>
+          )}
+          <div>
+            {show === 0
+              ? adminStatus === 0
+                ? "Please wait for admin to join"
+                : "Admin joined , please wait for the call"
+              : ""}
           </div>
         </div>
       </div>
       <div>
         {receivingCall && !callAccepted ? (
           <div className="caller">
-            <h1 style={{ color: "black" }}>{name} is calling...</h1>
+            <h4 style={{ color: "black" }}>
+              {" "}
+              Admin is calling . Click on Join meet to start KYC .
+            </h4>
             <Button variant="contained" color="primary" onClick={answerCall}>
-              Answer
+              Join Meet
             </Button>
           </div>
         ) : null}
@@ -304,15 +366,15 @@ function App({ show }) {
             </Button>
           </div>
           <div className="screenshot">
-            {/* <Screenshot snap={snap} func={setImage} /> */}
             {snap.map((pic, index) => {
               return (
                 <Screenshot
-                  snap={pic}
+                  snap={pic.src}
                   func={setImage}
                   index={index}
                   key={index}
                   deleteSnap={deleteSnap}
+                  setName={setNameImg}
                 />
               );
             })}

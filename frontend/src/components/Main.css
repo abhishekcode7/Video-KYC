@@ -3,9 +3,8 @@
     flex-direction: column;
     align-items: center;
     justify-content: space-around;
-    margin-top: 200px;
+    margin-top: 150px;
     flex-wrap: wrap;
-    height: 200px;
 }
 
 .admin{

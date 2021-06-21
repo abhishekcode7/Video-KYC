@@ -34,16 +34,7 @@ const Main = () => {
               Login as Admin
             </Button>
           </div>
-          <div>
-            <Button
-              variant="contained"
-              color="primary"
-              href="#contained-buttons"
-              onClick={() => setShow(2)}
-            >
-              Login as User
-            </Button>
-          </div>
+    
         </div>
       )}
       {show !== 0 ? <App show={show} /> : ""}
