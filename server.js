@@ -5,6 +5,8 @@ const server = http.createServer(app);
 const router = express.Router();
 const fs = require("fs");
 const bodyParser = require("body-parser");
+const cors = require("cors");
+app.use(cors);
 app.use(bodyParser.json({ limit: "50mb" }));
 app.use(bodyParser.urlencoded({ limit: "50mb", extended: true }));
 const FileReader = require("filereader");
@@ -19,6 +21,7 @@ const io = require("socket.io")(server, {
 otp = "1";
 let admins = { id: null };
 let users = { id: null };
+app.use(express.static(path.join(__dirname,'frontend/build')));
 io.on("connection", (socket) => {
   socket.emit("me", socket.id);
   socket.on("set", (data) => {
@@ -94,5 +97,8 @@ router.post("/saveData", (req, res) => {
   //   console.log(err);
   // });
 });
+app.get("*",(req,res)=>{
+  res.sendFile(path.join(__dirname+'/frontend/build/index.html'));
+})
 app.use("/", router);
-server.listen(5000, () => console.log("server is running on port 5000"));
+server.listen(process.env.PORT || 5000, () => console.log("server is running on port 5000"));
